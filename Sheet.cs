@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 using Google.Apis.Http;
 
@@ -87,19 +89,23 @@ namespace OvergownBot
             return _invalidCells.Count == 0;
         }
 
-        public void ReportResults()
+        public string ReportResults()
         {
+            var s = new StringBuilder();
             if (IsValid()) 
             { 
-                Console.WriteLine("Valid");
-                return;
+                s.AppendLine("Valid");
+            }
+            else
+            {
+                foreach (var cell in _invalidCells)
+                {
+                    var msg = string.IsNullOrEmpty(cell.Value) ? "<empty>" : cell.Value;
+                    s.AppendLine($"{Utils.A1(cell.Col, cell.Row)}: Invalid {cell.Kind}: {msg}");
+                }
             }
 
-            foreach (var cell in _invalidCells)
-            {
-                var msg = string.IsNullOrEmpty(cell.Value) ? "<empty>" : cell.Value;
-                Console.WriteLine($"{Utils.A1(cell.Col, cell.Row)}: Invalid {cell.Kind}: {msg}");
-            }
+            return s.ToString();
         }
     }
 
@@ -211,7 +217,7 @@ namespace OvergownBot
                 row++;
             }
 
-            results.ReportResults();
+            Console.WriteLine(results.ReportResults());
         }
         
         public void Validate()
