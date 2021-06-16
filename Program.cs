@@ -35,6 +35,19 @@ namespace OvergownBot
                 new Header { Name = "REPORT", Kind = CellKind.Report, Width = 5 },
                 new Header { Name = "DATE ISSUED", Kind = CellKind.Date, Width = 5 },
             });
+        
+        public static Sheet ClearedStrikeSheet = new Sheet(
+            "Cleared Strikes Sheet",
+            new []
+            {
+                new Header { Name = "IN GAME NAME", Kind = CellKind.Name, Width = 1 },
+                new Header { Name = "STEAM ID", Kind = CellKind.Id, Width = 1 },
+                new Header { Name = "OFFENSE", Kind = CellKind.Offense, Width = 1 },
+                new Header { Name = "REASON", Kind = CellKind.Reason, Width = 5 },
+                new Header { Name = "REPORT", Kind = CellKind.Report, Width = 5 },
+                new Header { Name = "DATE ISSUED", Kind = CellKind.Date, Width = 5 },
+                new Header { Name = "REMOVAL DATE", Kind = CellKind.Date, Width = 5 },
+            });
             
         
         static void Main(string[] args)
@@ -42,11 +55,13 @@ namespace OvergownBot
             var r = new Requester();
             StrikeSheet.Init(r);
             VerbalSheet.Init(r);
+            ClearedStrikeSheet.Init(r);
 
             try
             {
                 StrikeSheet.Validate();
                 VerbalSheet.Validate();
+                ClearedStrikeSheet.Validate();
             }
             catch (ValidationException e)
             {
