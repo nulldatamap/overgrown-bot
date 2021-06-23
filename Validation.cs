@@ -69,7 +69,7 @@ namespace OvergownBot
                 s.AppendLine($"Duplicated steam IDs in {sheet}");
                 foreach (var ((_, id), dups) in entries)
                 {
-                    s.AppendLine($"Steam ID '{id}' occours in both of these users:");
+                    s.AppendLine($"Steam ID '{id}' occours in all of these users:");
                     foreach (var p in dups)
                         s.AppendLine($"  {p}");
                     
