@@ -33,13 +33,14 @@ namespace OvergownBot
     
     public class Requester
     {
-        static string[] Scopes = { SheetsService.Scope.SpreadsheetsReadonly };
+        static string[] Scopes = { SheetsService.Scope.Spreadsheets };
         // TODO: Make this configurable?
         private String _spreadsheetId = "1LVUp0_XvBC8aIqgEnbTlVxWASsoElngTizlbdoNQLRU"; 
         private static string _applicationName = "OvergrownBot"; 
-        private UserCredential _credential;
+        private GoogleCredential _credential;
         private SheetsService _service;
         private string _steamApiKey;
+        private Dictionary<string, SteamUser> _cachedSteamUsers = new Dictionary<string, SteamUser>();
         
         private HttpClient _httpClient = new HttpClient()
         {
@@ -49,16 +50,9 @@ namespace OvergownBot
         public Requester()
         {
             using (var stream =
-                new FileStream("credentials.json", FileMode.Open, FileAccess.Read))
+                new FileStream("service-key.json", FileMode.Open, FileAccess.Read))
             {
-                string credPath = "token.json";
-                _credential = GoogleWebAuthorizationBroker.AuthorizeAsync(
-                    GoogleClientSecrets.Load(stream).Secrets,
-                    Scopes,
-                    "user",
-                    CancellationToken.None,
-                    new FileDataStore(credPath, true)).Result;
-                Console.WriteLine("Credential file saved to: " + credPath);
+                _credential = GoogleCredential.FromStream(stream).CreateScoped(Scopes);
             }
 
             _service = new SheetsService(new BaseClientService.Initializer()
@@ -70,12 +64,41 @@ namespace OvergownBot
             _steamApiKey = File.ReadAllText("steamapikey.txt").Trim();
         }
 
-        public ValueRange RawExecute(string range)
+        public ValueRange Query(string range)
         {
             return _service.Spreadsheets.Values.Get(_spreadsheetId, range).Execute();
         }
 
-        public List<SteamUser> ResolveSteamIds(string[] steamids)
+        public object QuerySingle(string range)
+        {
+            var vs = Query(range);
+            if (vs?.Values == null || vs.Values.Count != 1 || vs.Values[0]?.Count != 1)
+                throw new InvalidOperationException("Got non-singleton value");
+            return vs.Values[0][0];
+        }
+
+        public void WriteSingle(string range, object value)
+        {
+            var vr = new ValueRange();
+            vr.Values = new List<IList<object>>() { new List<object>() { value } };
+            vr.Range = range;
+            var ur = _service.Spreadsheets.Values.Update(vr, _spreadsheetId, range);
+            ur.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.RAW;
+            var resp = ur.Execute();
+        }
+
+        public SteamUser GetSteamUser(string id)
+        {
+            SteamUser user;
+            if (!_cachedSteamUsers.TryGetValue(id, out user))
+            {
+                user = ResolveSteamId(id);
+                _cachedSteamUsers.Add(id, user);
+            }
+            return user;
+        }
+
+        public List<SteamUser> ResolveSteamIds(IEnumerable<string> steamids)
         {
             var req = $"ISteamUser/GetPlayerSummaries/v0002/?key={_steamApiKey}&steamids={string.Join(',', steamids)}";
             var result =
@@ -89,6 +112,23 @@ namespace OvergownBot
             var result =
                 Task.Run(async () => await _httpClient.GetFromJsonAsync<SteamUserResponse>(req)).Result;
             return result?.response?.players?.FirstOrDefault(x => true);
+        }
+
+        public void CacheSteamIds(IEnumerable<string> steamIds)
+        {
+            var ids = steamIds.ToArray();
+            var users = 
+                steamIds.Where(id => id.ToUpper() != "NEED ID")
+                    .Select((x, i) => (x, i))
+                    .GroupBy(x => x.i / 100)
+                    .SelectMany((x, _) => ResolveSteamIds(x.Select(x => x.x)))
+                    .ToArray();
+            
+            foreach (var id in ids)
+            {
+                if (!_cachedSteamUsers.ContainsKey(id))
+                    _cachedSteamUsers.Add(id, users.FirstOrDefault(user => user.steamid == id));
+            }
         }
     }
 }
