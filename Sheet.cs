@@ -149,6 +149,8 @@ namespace OvergownBot
             var db = new PlayerDatabase();
             foreach (var entry in _cells)
             {
+                if (entry == null || entry.Count <= Math.Max(_playerNameIdx, _playerIdIdx)) continue;
+                
                 var p = Player.Build(_ctx, (string) entry[_playerNameIdx], (string) entry[_playerIdIdx]);
                 if (!db.AddPlayer(p, out var dup))
                 {
