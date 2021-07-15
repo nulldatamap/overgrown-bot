@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection.Metadata;
@@ -66,7 +66,12 @@ namespace OvergownBot
             foreach (var entries in _duplicatedSteamIds.GroupBy(kv => kv.Key.Item1))
             {
                 var sheet = entries.Key;
-                s.AppendLine($"Duplicated steam IDs in {sheet}");
+                var header = $"======= Duplicated steam IDs in {sheet} =======";
+                var line = new String('=', header.Length);
+                s.AppendLine(line);
+                s.AppendLine(header);
+                s.AppendLine(line);
+                s.AppendLine();
                 foreach (var ((_, id), dups) in entries)
                 {
                     s.AppendLine($"Steam ID '{id}' occours in all of these users:");
@@ -76,7 +81,7 @@ namespace OvergownBot
                     s.AppendLine();
                 }
 
-                s.AppendLine();
+                s.AppendLine("\n");
             }
 
             foreach (var invCells in _invalidCells.GroupBy(x => x.Sheet))
