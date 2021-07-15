@@ -131,7 +131,7 @@ namespace OvergownBot
 
         private static readonly Regex _rReportNumber =
             new Regex(@"\s*Report\s*(\d+)\s*(\s*\d+)*\s*",
-                RegexOptions.Compiled | RegexOptions.IgnoreCase);
+                RegexOptions.Compiled);
 
         private static readonly Regex _rDate =
             new Regex(@"\s*(no appeal|appeal deined.+|(\d{1,2})/(\d{1,2})/(\d{2}|\d{4})\s*(|.+)?)",
