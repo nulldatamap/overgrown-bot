@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -27,21 +27,18 @@ namespace OvergownBot
         public int Width;
     }
     
-    public class Sheet
+    public class Sheet : BaseSheet
     {
-        public string Name { get; private set; }
         public Header[] Headers { get; private set; }
 
-        private Context _ctx;
         private int _width;
         private IList<IList<object>> _cells;
         private PlayerDatabase _players = new PlayerDatabase();
         private int _playerNameIdx = -1;
         private int _playerIdIdx = -1;
 
-        public Sheet(string name, Header[] headers)
+        public Sheet(string name, Header[] headers) : base(name)
         {
-            Name = name;
             Headers = headers;
             _width = headers.Sum(h => h.Width);
         }
@@ -57,11 +54,6 @@ namespace OvergownBot
             }
 
             return sb.ToString();
-        }
-
-        public void Init(Context ctx)
-        {
-            _ctx = ctx;
         }
 
         public IList<IList<Object>> GetRange(int x0, int y0, int x1, int y1)
@@ -126,8 +118,11 @@ namespace OvergownBot
                 foreach (var (v, k) in rows.Zip(ks))
                 {
                     if (!k.Validate(v))
+                    {
                         // TODO: Eh this v as string is not good
                         _ctx.VR.AddInvalidCell(Name, row, col, v as string, k);
+                    }
+
                     col++;
                 }
                 row++;
@@ -142,7 +137,8 @@ namespace OvergownBot
 
         public void BuildPlayerDatabase()
         {
-            _ctx.R.CacheSteamIds(_cells.SelectMany(e => ((string) e[_playerIdIdx])
+            _ctx.R.CacheSteamIds(_cells.Where(e => e != null && e.Count > _playerIdIdx)
+                .SelectMany(e => ((string) e?[_playerIdIdx])
                 .Split('/')
                 .Select(x => x.Trim())));
             

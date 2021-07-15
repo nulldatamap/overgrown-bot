@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
@@ -18,9 +18,8 @@ namespace OvergownBot
     class Program
     {
 
-        public static DashboardSheet Dashboard = new DashboardSheet()
+        public static DashboardSheet Dashboard = new DashboardSheet("Bot Dashboard")
         {
-            Name = "Bot Dashboard",
             OutputCell = (0, 4),
             LastUpdatedCell = (6, 3),
             ConfigStart = (7, 2),
@@ -66,16 +65,14 @@ namespace OvergownBot
         public static Context Init()
         {
             var r = new Requester();
-            Dashboard.Init(r);
-
-            var ctx = new Context()
-            {
-                R = r,
-                DB = new PlayerDatabase(),
-                D = Dashboard,
-                VR = new ValidationResults(),
-                S = Dashboard.ParseSheetFormats(),
-            };
+            
+            var ctx = new Context();
+            ctx.R = r;
+            Dashboard.Init(ctx);
+            ctx.DB = new PlayerDatabase();
+            ctx.D = Dashboard;
+            ctx.VR = new ValidationResults();
+            ctx.S = Dashboard.ParseSheetFormats();
             
             foreach (var sheet in ctx.S)
             {

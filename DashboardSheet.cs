@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Google.Apis.Sheets.v4;
@@ -10,29 +10,22 @@ namespace OvergownBot
         String,
         Number
     }
-    
-    public class DashboardSheet
-    {
-        private Requester _r;
 
-        public string Name;
+    public class DashboardSheet : BaseSheet
+    {
+
         public (int, int) OutputCell;
         public (int, int) LastUpdatedCell;
         public (int, int) ConfigStart;
         public int NumberOfProperties;
         public (int, int) HeaderConfigStart;
         public int NumberOfSheets;
-        
+
         public float CheckInteraval { get; private set; }
         public bool DumpPlayerDatabase { get; private set; }
 
-        public DashboardSheet()
+        public DashboardSheet(string name) : base(name)
         {
-        }
-
-        public void Init(Requester r)
-        {
-            _r = r;
         }
 
         public void LoadConfig()
@@ -40,13 +33,13 @@ namespace OvergownBot
             // Read configuration
             var (cx, cy) = ConfigStart;
             var vals =
-                _r.Query($"{Name}!{Utils.R1C1(cx + 1, cy)}:{Utils.R1C1(cx + 1, cy + NumberOfProperties - 1)}")
+                _ctx.R.Query($"{Name}!{Utils.R1C1(cx + 1, cy)}:{Utils.R1C1(cx + 1, cy + NumberOfProperties - 1)}")
                     .Values;
             var props = vals
                     .SelectMany(x => x ?? new List<object>())
                     .Cast<string>()
                     .ToArray();
-            
+
             CheckInteraval = float.Parse(props[0]);
             DumpPlayerDatabase = bool.Parse(props[1]);
         }
@@ -56,13 +49,13 @@ namespace OvergownBot
             var date = DateTime.Now;
             date = date.ToUniversalTime();
             var (x, y) = LastUpdatedCell;
-            _r.WriteSingle($"{Name}!{Utils.R1C1(x, y)}", Utils.EST(date));
+            _ctx.R.WriteSingle($"{Name}!{Utils.R1C1(x, y)}", Utils.EST(date));
         }
 
         public void Publish(string msg)
         {
             var (x, y) = OutputCell;
-            _r.WriteSingle($"{Name}!{Utils.R1C1(x, y)}", msg);
+            _ctx.R.WriteSingle($"{Name}!{Utils.R1C1(x, y)}", msg);
 
             UpdateLastUpdate();
         }
@@ -76,7 +69,7 @@ namespace OvergownBot
         {
             var (cx, cy) = HeaderConfigStart;
             var vals =
-                _r.Query($"{Name}!{Utils.R1C1(cx, cy)}:{Utils.R1C1(cx + 1, cy + NumberOfSheets - 1)}")
+                _ctx.R.Query($"{Name}!{Utils.R1C1(cx, cy)}:{Utils.R1C1(cx + 1, cy + NumberOfSheets - 1)}")
                     .Values;
 
             var sheets = new List<Sheet>();
