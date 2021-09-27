@@ -36,11 +36,13 @@ namespace OvergownBot
         private PlayerDatabase _players = new PlayerDatabase();
         private int _playerNameIdx = -1;
         private int _playerIdIdx = -1;
+        private bool _nonUniqueIds = false;
 
-        public Sheet(string name, Header[] headers) : base(name)
+        public Sheet(string name, Header[] headers, bool nonUniqueIds) : base(name)
         {
             Headers = headers;
             _width = headers.Sum(h => h.Width);
+            _nonUniqueIds = nonUniqueIds;
         }
 
         public string DumpHeaders()
@@ -50,7 +52,8 @@ namespace OvergownBot
             {
                 if (i != 0) sb.Append("|");
                 var h = Headers[i];
-                sb.Append($"{h.Name}:{h.Kind}:{h.Width}");
+                var special = h.Kind == CellKind.Id && _nonUniqueIds ? "*" : "";
+                sb.Append($"{h.Name}:{h.Kind}{special}:{h.Width}");
             }
 
             return sb.ToString();
@@ -148,7 +151,7 @@ namespace OvergownBot
                 if (entry == null || entry.Count <= Math.Max(_playerNameIdx, _playerIdIdx)) continue;
                 
                 var p = Player.Build(_ctx, (string) entry[_playerNameIdx], (string) entry[_playerIdIdx]);
-                if (!db.AddPlayer(p, out var dup))
+                if (!db.AddPlayer(p, out var dup) && !_nonUniqueIds)
                 {
                     _ctx.VR.DuplicateSteamId(Name, dup?.Item1, p, dup?.Item2);
                 }
@@ -157,22 +160,29 @@ namespace OvergownBot
 
         public static Sheet FromFormat(string name, string format)
         {
+            var nonUniqueIds = false;
             var headers =
                 format.Split('|')
                 .Select(f =>
                 {
                     var xs = f.Split(':');
                     if (xs.Length != 3) throw new Exception("Invalid header format");
+                    var kind = xs[1];
+                    if (kind == "Id*")
+                    {
+                        nonUniqueIds = true;
+                        kind = "Id";
+                    }
                     return new Header()
                     {
                         Name = xs[0],
-                        Kind = Enum.Parse<CellKind>(xs[1], true),
+                        Kind = Enum.Parse<CellKind>(kind, true),
                         Width = int.Parse(xs[2]),
                     };
                 })
                 .ToArray();
             
-            return new Sheet(name, headers);
+            return new Sheet(name, headers, nonUniqueIds);
         }
     }
 }
