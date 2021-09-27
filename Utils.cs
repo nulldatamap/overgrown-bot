@@ -15,8 +15,10 @@ namespace OvergownBot
         
         public static string A1(int x, int y)
         {
-            if (x >= 26) throw new InvalidOperationException("Currently columns past Z are not supported for A1 format");
             var cx = (char) ('A' + x);
+            if (x >= 26)
+                return $"A{cx}{1+y}";
+            
             return $"{cx}{1+y}";
         }
 
